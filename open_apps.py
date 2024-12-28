@@ -58,7 +58,7 @@ def open_application(command):
                         print(f"Открываю {key}...")
                         
                         if key in ["музыка", "музыку"]:
-                            time.sleep(5)  # Даем время для запуска
+                            time.sleep(5) 
                             control_window("Яндекс Музыка")
                             click_my_wave_button()
                         return True
@@ -121,7 +121,7 @@ def open_link(command, task_name=None):
 
 def perform_action(command):
     """Обрабатывает команды для открытия приложений, папок или ссылок."""
-    if command.startswith("открой") or command.startswith("запусти") or command.startswith("включи"):
+    if command.startswith("открой") or command.startswith("запусти") or command.startswith("включи") or command.startswith("выключи"):
         # Проверяем приложения и папки
         if open_application(command):
             return
@@ -139,8 +139,7 @@ def perform_action(command):
 def click_my_wave_button():
     """Имитирует нажатие на кнопку 'Моя волна'."""
     try:
-        # Задержка для загрузки окна
-        #time.sleep(5)  # уменьшена задержка
+  
 
         # Активация окна
         from pywinauto import Application
