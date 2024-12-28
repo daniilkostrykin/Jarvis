@@ -58,7 +58,12 @@ def open_application(command):
                         print(f"Открываю {key}...")
                         
                         if key in ["музыка", "музыку"]:
-                            time.sleep(5) 
+                            time.sleep(5)  # Даем время для запуска
+                            
+                            app = Application().connect(title_re="Яндекс Музыка")
+                            main_window = app.window(title_re="Яндекс Музыка")
+                            main_window.set_focus()
+                            
                             control_window("Яндекс Музыка")
                             click_my_wave_button()
                         return True
@@ -121,7 +126,7 @@ def open_link(command, task_name=None):
 
 def perform_action(command):
     """Обрабатывает команды для открытия приложений, папок или ссылок."""
-    if command.startswith("открой") or command.startswith("запусти") or command.startswith("включи") or command.startswith("выключи"):
+    if command.startswith("открой") or command.startswith("запусти") or command.startswith("включи"):
         # Проверяем приложения и папки
         if open_application(command):
             return
@@ -133,25 +138,20 @@ def perform_action(command):
         # Если приложение не найдено, пробуем открыть ссылку
         if open_link(command):
             return
+    if command.startswith("выключи"):
+         if "музыку" in command:
+            app = Application().connect(title_re="Яндекс Музыка")
+            main_window = app.window(title_re="Яндекс Музыка")
+            main_window.set_focus()
+            main_window.maximize()
+            click_my_wave_button()
+            return
     print(f"Команда '{command}' не распознана.")
 
 
 def click_my_wave_button():
     """Имитирует нажатие на кнопку 'Моя волна'."""
     try:
-  
-
-        # Активация окна
-        from pywinauto import Application
-        app = Application().connect(title_re="Яндекс Музыка")
-        main_window = app.window(title_re="Яндекс Музыка")
-        main_window.set_focus()
-
-        # Проверка активного окна
-        if not main_window.has_focus():
-            print("Окно не активно!")
-            return
-
         # Получение координат
         button_position = (718, 323)  # Убедитесь, что это верные координаты кнопки 'Моя волна'
 
