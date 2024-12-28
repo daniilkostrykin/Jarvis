@@ -1,7 +1,7 @@
 # main.py
 import pyttsx3
 import speech_recognition as sr
-from switch_window import switch_to_application
+from switch_window import switch_to_application,select_window_from_list
 from open_apps import open_application
 
 # Инициализация модуля синтеза речи

@@ -1,7 +1,6 @@
 import pygetwindow as gw
 import tkinter as tk
 import speech_recognition as sr
-import threading
 import time
 
 # Словарь с пользовательскими названиями для поиска окон
@@ -116,12 +115,11 @@ def select_window_from_list(on_selection_callback):
                     print("Проблема с подключением к интернету. Попробуйте снова.")
                 except sr.WaitTimeoutError:
                     print("Вы ничего не сказали. Попробуйте снова.")
-
     def process_selection(command, windows, root):
         """Обрабатывает выбранное окно на основе порядкового номера."""
         if command == "стоп":
             on_selection_callback(False)
-            root.after(0, lambda: root.destroy())
+            root.destroy()
             return True
 
         if command:
@@ -142,13 +140,12 @@ def select_window_from_list(on_selection_callback):
 
                     try:
                         selected_window.activate()
-                        selected_window.bringToFront()
                         print(f"Окно активно: {selected_window.title}")
                     except Exception as e:
                         print(f"Ошибка активации {e}")
 
                     on_selection_callback(True)
-                    root.after(0, lambda: root.destroy())
+                    root.destroy()
                     return True
                 else:
                     print("Выбранный номер окна не существует.")
@@ -156,7 +153,7 @@ def select_window_from_list(on_selection_callback):
                 print("Не распознано порядковое число. Пожалуйста, скажите, например, 'первое' или 'третье'.")
         return False
 
-    threading.Thread(target=listen_for_selection, args=(root, windows), daemon=True).start()
+    listen_for_selection(root, windows)
     root.mainloop()
 
 
@@ -181,7 +178,6 @@ def switch_to_application(app_name):
         if window.isMinimized:
             window.restore()  # Восстанавливаем окно, если оно минимизировано
         window.activate()  # Переключаемся на окно
-        window.bringToFront()  # Переводим окно на передний план
         print(f"Переключено на окно: {window.title}")
     except Exception as e:
         print(f"Ошибка при активации окна: {e}")
