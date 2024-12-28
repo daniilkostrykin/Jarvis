@@ -1,8 +1,8 @@
-# main.py
-import pyttsx3
-import speech_recognition as sr
 from switch_window import switch_to_application, select_window_from_list
 from open_apps import open_application
+import speech_recognition as sr
+import pyttsx3
+
 
 # Инициализация модуля синтеза речи
 engine = pyttsx3.init()
@@ -36,7 +36,7 @@ def listen():
 
 
 def get_command_input():
-    """Функция для голосового ввода команды."""
+    """Функция для выбора способа ввода команды (только голосом)."""
     print("Голосовой ввод активирован. Слушаю...")
     return listen  # Возвращаем функцию для голосового ввода
 
@@ -59,18 +59,11 @@ def execute_command(command):
 # Обновленный вызов программы
 if __name__ == "__main__":
     print("Привет! Я ваш ассистент. Чем могу помочь?")
-    get_command = get_command_input()
+    command_input_method = get_command_input()
 
     while True:
-        try:
-
-            command = get_command()  # Слушаем голос
-            if command:
-                execute_command(command)
-            if command == "стоп" or command == "выход" or command == "до связи":
-                print("Работа ассистента завершена.")
-                break
-            execute_command(command)
-        except Exception as e:
-                    print(f"Ошибка: {e}")
-                    continue
+        command = command_input_method()
+        if command == "стоп" or command == "выход" or command == "до связи":
+            print("Работа ассистента завершена.")
+            break
+        execute_command(command)
