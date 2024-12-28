@@ -72,7 +72,6 @@ def get_application_window(app_name):
     print(f"Не найдено окно для запроса '{app_name}'.")
     return None
 
-
 def select_window_from_list(on_selection_callback):
     """Показывает список всех окон и ожидает выбора голосом."""
     windows = [win for win in gw.getAllWindows() if win.title.strip()]
@@ -100,81 +99,65 @@ def select_window_from_list(on_selection_callback):
     root.deiconify()
 
     def listen_for_selection(root, windows):
-       """Слушает номер окна от пользователя в отдельном потоке."""
-       root.withdraw()  # скрываем окно
-       recognizer = sr.Recognizer()
-       stop_listening = False
-       while not stop_listening:
-           with sr.Microphone() as source:
+        """Слушает номер окна от пользователя в отдельном потоке."""
+        recognizer = sr.Recognizer()
+        stop_listening = False
+        while not stop_listening:
+            with sr.Microphone() as source:
                 print("Слушаю номер окна...")
                 try:
-                   audio = recognizer.listen(source, timeout=5)
-                   command = recognizer.recognize_google(audio, language='ru-RU')
-                   print(f"Вы сказали: {command}")
-                   stop_listening = process_selection(command, windows, root)
+                    audio = recognizer.listen(source, timeout=5)
+                    command = recognizer.recognize_google(audio, language='ru-RU')
+                    print(f"Вы сказали: {command}")
+                    stop_listening = process_selection(command, windows, root)
                 except sr.UnknownValueError:
-                   print("Не удалось распознать речь. Попробуйте снова.")
+                    print("Не удалось распознать речь. Попробуйте снова.")
                 except sr.RequestError:
                     print("Проблема с подключением к интернету. Попробуйте снова.")
                 except sr.WaitTimeoutError:
-                   print("Вы ничего не сказали. Попробуйте снова.")
-           #time.sleep(0.1) #что бы избежать загрузки ЦП в бесконечном цикле
+                    print("Вы ничего не сказали. Попробуйте снова.")
+
     def process_selection(command, windows, root):
-       """Обрабатывает выбранное окно на основе порядкового номера."""
+        """Обрабатывает выбранное окно на основе порядкового номера."""
+        if command == "стоп":
+            on_selection_callback(False)
+            root.after(0, lambda: root.destroy())
+            return True
 
-       if command == "стоп":
-           on_selection_callback(False)
-           root.after(0, lambda: root.quit())
-           return True  # завершаем цикл прослушивания
+        if command:
+            command = command.lower().strip()
+            command = command.replace("окно", "").strip()
+            parts = command.split()
 
-       if command:
-           command = command.lower().strip()
-           command = command.replace("окно", "").strip()# удаляем слово "окно"
-           parts = command.split()  # разделение на  массив строк
+            if parts[0] in ordinals:
+                choice = ordinals[parts[0]]
+                if 0 <= choice < len(windows):
+                    selected_window = windows[choice]
+                    print(
+                        f"Переключение на: {selected_window.title}, минимизировано ли оно: {selected_window.isMinimized}"
+                    )
 
-           # Сначала ищем полное совпадение , затем
-           if parts[0] in ordinals:
-               # первое  слово из всех и  будет индексом в ordinals
-               choice = ordinals[parts[0]]
-               if 0 <= choice < len(windows):
+                    if selected_window.isMinimized:
+                        selected_window.restore()
 
-                   # получет объект окна для последующих операций
-                   selected_window = windows[choice]
-                   # Отладочный вывод  и был ли свернут
-                   print(
-                       f"Переключение на: {selected_window.title}, минимизировано ли оно: {selected_window.isMinimized}")
+                    try:
+                        selected_window.activate()
+                        selected_window.bringToFront()
+                        print(f"Окно активно: {selected_window.title}")
+                    except Exception as e:
+                        print(f"Ошибка активации {e}")
 
-                   if selected_window.isMinimized:  # если окно свернуто
-                       selected_window.restore()  # Восстанавливаем
-                   try:
-                       selected_window.activate()  # сделать фокус на этом окне  (сразу  не переходит сюда)
-                       selected_window.bringToFront()  # наверх  всех окон
-                       # сразу  не приходит  сюда
-                       print(f"Окно активно: {selected_window.title}")
-                   except Exception as e:
-                       # теперь с ошибкой- должна  дойти.
-                       print(f"Ошибка активации {e}")
+                    on_selection_callback(True)
+                    root.after(0, lambda: root.destroy())
+                    return True
+                else:
+                    print("Выбранный номер окна не существует.")
+            else:
+                print("Не распознано порядковое число. Пожалуйста, скажите, например, 'первое' или 'третье'.")
+        return False
 
-                   # по старому это здесь  и не выводится
-                   print(f"Переключено на окно: {selected_window.title}")
-                   on_selection_callback(True)  # сообщаем, что выбор был сделан
-                   root.after(0, lambda: root.quit())  # останавливаем главный цикл tkinter (mainloop)
-                   return True  # Команда распознана и выполнена. Завершить.
-
-               else:  # если первое слово является числом но вышло за рамки диапазона
-                   print("Выбранный номер окна не существует.")
-
-           else:  # если нет вообще такого варианта,  вывести  сообщение  об ошибке
-               print(
-                   "Не распознано порядковое число. Пожалуйста, скажите, например, 'первое' или 'третье'.")
-           return False  # продолжаем слушать
-       else:
-           return False  # продолжаем слушать
-
-    # Запускаем прослушивание в отдельном потоке после отрисовки окна
-    threading.Thread(target=listen_for_selection, args=(root,windows), daemon = True).start()
+    threading.Thread(target=listen_for_selection, args=(root, windows), daemon=True).start()
     root.mainloop()
-    root.wait_window()
 
 
 def switch_to_application(app_name):
