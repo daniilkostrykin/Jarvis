@@ -1,6 +1,8 @@
 import pygetwindow as gw
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+import speech_recognition as sr
+import threading
+import time
 
 # Словарь с пользовательскими названиями для поиска окон
 app_mapping = {
@@ -13,7 +15,45 @@ app_mapping = {
     "чат": "ChatGPT",
 }
 
-
+# Расширенный маппинг для порядковых числительных
+ordinals = {
+    "первое": 0,
+    "первый": 0,
+    "первая": 0,
+    "второе": 1,
+    "второй": 1,
+    "вторая": 1,
+    "третье": 2,
+    "третий": 2,
+    "третья": 2,
+    "четвертое": 3,
+    "четвертый": 3,
+    "четвертая": 3,
+    "пятое": 4,
+    "пятый": 4,
+    "пятая": 4,
+    "шестое": 5,
+    "шестой": 5,
+    "шестая": 5,
+    "седьмое": 6,
+    "седьмой": 6,
+    "седьмая": 6,
+    "восьмое": 7,
+    "восьмой": 7,
+    "восьмая": 7,
+    "девятое": 8,
+    "девятый": 8,
+    "девятая": 8,
+    "десятое": 9,
+    "десятый": 9,
+    "десятая": 9,
+    "одиннадцатое": 10,
+    "одиннадцатый": 10,
+    "одиннадцатая": 10,
+    "двенадцатое": 11,
+    "двенадцатый": 11,
+    "двенадцатая": 11,
+}
 def get_application_window(app_name):
     """Найти окно, связанное с приложением, по названию окна."""
     # Получаем реальное название окна из словаря
@@ -33,51 +73,132 @@ def get_application_window(app_name):
     return None
 
 
-def select_window_from_list():
-    """Показывает список всех окон и позволяет выбрать порядковый номер."""
-    windows = gw.getAllWindows()
-    window_titles = [win.title for win in windows if win.title.strip()]
-
-    if not window_titles:
+def select_window_from_list(on_selection_callback):
+    """Показывает список всех окон и ожидает выбора голосом."""
+    windows = [win for win in gw.getAllWindows() if win.title.strip()]
+    if not windows:
         print("Нет доступных окон.")
         return None
 
-    # Создаём графический интерфейс с Tkinter
+    window_titles = [win.title for win in windows]
     root = tk.Tk()
-    root.withdraw()  # Скрываем основное окно
+    root.title("Выбор окна")
+    root.geometry("600x400")
 
-    # Создаём строку с нумерованным списком окон
-    window_list = "\n".join([f"{i + 1}. {title}" for i, title in enumerate(window_titles)])
-    prompt = f"Выберите окно из списка (введите номер):\n\n{window_list}"
-    choice = simpledialog.askinteger("Выбор окна", prompt, minvalue=1, maxvalue=len(window_titles))
+    label = tk.Label(
+        root,
+        text="Список доступных окон. Назовите порядковый номер окна, например: 'третье':",
+        font=("Arial", 14)
+    )
+    label.pack(pady=10)
+    text = tk.Text(root, font=("Arial", 12), wrap="word")
+    text.insert("1.0", "\n".join(
+        [f"{i + 1}. {title}" for i, title in enumerate(window_titles)]))
+    text.config(state="disabled")
+    text.pack(expand=True, fill="both", padx=10, pady=10)
+    root.update()
+    root.deiconify()
 
-    if choice is None:  # Если выбор отменён
-        print("Выбор окна отменён.")
-        return None
+    def listen_for_selection(root, windows):
+       """Слушает номер окна от пользователя в отдельном потоке."""
+       root.withdraw()  # скрываем окно
+       recognizer = sr.Recognizer()
+       stop_listening = False
+       while not stop_listening:
+           with sr.Microphone() as source:
+                print("Слушаю номер окна...")
+                try:
+                   audio = recognizer.listen(source, timeout=5)
+                   command = recognizer.recognize_google(audio, language='ru-RU')
+                   print(f"Вы сказали: {command}")
+                   stop_listening = process_selection(command, windows, root)
+                except sr.UnknownValueError:
+                   print("Не удалось распознать речь. Попробуйте снова.")
+                except sr.RequestError:
+                    print("Проблема с подключением к интернету. Попробуйте снова.")
+                except sr.WaitTimeoutError:
+                   print("Вы ничего не сказали. Попробуйте снова.")
+           #time.sleep(0.1) #что бы избежать загрузки ЦП в бесконечном цикле
+    def process_selection(command, windows, root):
+       """Обрабатывает выбранное окно на основе порядкового номера."""
 
-    selected_window = windows[choice - 1]
-    return selected_window
+       if command == "стоп":
+           on_selection_callback(False)
+           root.after(0, lambda: root.quit())
+           return True  # завершаем цикл прослушивания
+
+       if command:
+           command = command.lower().strip()
+           command = command.replace("окно", "").strip()# удаляем слово "окно"
+           parts = command.split()  # разделение на  массив строк
+
+           # Сначала ищем полное совпадение , затем
+           if parts[0] in ordinals:
+               # первое  слово из всех и  будет индексом в ordinals
+               choice = ordinals[parts[0]]
+               if 0 <= choice < len(windows):
+
+                   # получет объект окна для последующих операций
+                   selected_window = windows[choice]
+                   # Отладочный вывод  и был ли свернут
+                   print(
+                       f"Переключение на: {selected_window.title}, минимизировано ли оно: {selected_window.isMinimized}")
+
+                   if selected_window.isMinimized:  # если окно свернуто
+                       selected_window.restore()  # Восстанавливаем
+                   try:
+                       selected_window.activate()  # сделать фокус на этом окне  (сразу  не переходит сюда)
+                       selected_window.bringToFront()  # наверх  всех окон
+                       # сразу  не приходит  сюда
+                       print(f"Окно активно: {selected_window.title}")
+                   except Exception as e:
+                       # теперь с ошибкой- должна  дойти.
+                       print(f"Ошибка активации {e}")
+
+                   # по старому это здесь  и не выводится
+                   print(f"Переключено на окно: {selected_window.title}")
+                   on_selection_callback(True)  # сообщаем, что выбор был сделан
+                   root.after(0, lambda: root.quit())  # останавливаем главный цикл tkinter (mainloop)
+                   return True  # Команда распознана и выполнена. Завершить.
+
+               else:  # если первое слово является числом но вышло за рамки диапазона
+                   print("Выбранный номер окна не существует.")
+
+           else:  # если нет вообще такого варианта,  вывести  сообщение  об ошибке
+               print(
+                   "Не распознано порядковое число. Пожалуйста, скажите, например, 'первое' или 'третье'.")
+           return False  # продолжаем слушать
+       else:
+           return False  # продолжаем слушать
+
+    # Запускаем прослушивание в отдельном потоке после отрисовки окна
+    threading.Thread(target=listen_for_selection, args=(root,windows), daemon = True).start()
+    root.mainloop()
+    root.wait_window()
 
 
 def switch_to_application(app_name):
     """Переключиться на окно приложения по названию или через список окон."""
     window = get_application_window(app_name)
     if not window:
-        print(f"Приложение '{app_name}' не найдено. Предлагаем выбрать из списка окон.")
-        window = select_window_from_list()
+        print(f"Приложение '{app_name}' не найдено. Выберите окно из списка.")
+        # <-отладочная инфа- не должно  быть проблем.
+        print(f"Сейчас вызываем окно со списком: {app_name=}")
 
-    if window:
-        try:
-            if window.isMinimized:
-                window.restore()  # Восстанавливаем окно, если оно минимизировано
-            window.activate()  # Переключаемся на окно
-            print(f"Переключено на окно: {window.title}")
-        except Exception as e:
-            print(f"Ошибка при активации окна: {e}")
-    else:
-        print("Окно для переключения не выбрано.")
+        def on_selection_complete(selected):
+            if selected:
+                print("Переключение завершено")
+            else:
+                print("Переключение не произошло")
 
+        select_window_from_list(on_selection_complete)
+        return
 
-if __name__ == "__main__":
-    # Пример использования
-    switch_to_application("браузер")  # Например, ищем окно по слову "браузер"
+    try:
+        if window.isMinimized:
+            window.restore()  # Восстанавливаем окно, если оно минимизировано
+        window.activate()  # Переключаемся на окно
+        window.bringToFront()  # Переводим окно на передний план
+        print(f"Переключено на окно: {window.title}")
+    except Exception as e:
+        print(f"Ошибка при активации окна: {e}")
