@@ -1,16 +1,18 @@
 # main.py
 import pyttsx3
 import speech_recognition as sr
-from switch_window import switch_to_application,select_window_from_list
+from switch_window import switch_to_application, select_window_from_list
 from open_apps import open_application
 
 # Инициализация модуля синтеза речи
 engine = pyttsx3.init()
 
+
 def speak(text):
     """Функция для озвучивания текста."""
     engine.say(text)
     engine.runAndWait()
+
 
 def listen():
     """Функция для распознавания голоса."""
@@ -32,40 +34,43 @@ def listen():
             print("Вы ничего не сказали.")
             return ""
 
+
 def get_command_input():
-    """Функция для выбора способа ввода команды."""
-    while True:
-        print("Выберите способ ввода: 1 - голосом, 2 - текстом")
-        choice = input("Ваш выбор (1/2): ").strip()
-        if choice == "1":
-            return listen
-        elif choice == "2":
-            return lambda: input("Введите команду: ").strip().lower()
-        else:
-            print("Некорректный выбор. Попробуйте снова.")
+    """Функция для голосового ввода команды."""
+    print("Голосовой ввод активирован. Слушаю...")
+    return listen  # Возвращаем функцию для голосового ввода
+
 
 def execute_command(command):
     """Обработка команд."""
     if command.startswith("открой"):
-      app_name = command.replace("открой", "").strip()
-      open_application(app_name)
-      return
-   
+        app_name = command.replace("открой", "").strip()
+        open_application(app_name)
+        return
+
     if "переключись на" in command:
-     window_name = command.replace("переключись на", "").strip()
-     switch_to_application(window_name)
-     return
+        window_name = command.replace("переключись на", "").strip()
+        switch_to_application(window_name)
+        return
 
     print(f"Команда '{command}' не распознана.")
+
 
 # Обновленный вызов программы
 if __name__ == "__main__":
     print("Привет! Я ваш ассистент. Чем могу помочь?")
-    command_input_method = get_command_input()
+    get_command = get_command_input()
 
     while True:
-        command = command_input_method()
-        if command == "стоп":
-            print("Работа ассистента завершена.")
-            break
-        execute_command(command)
+        try:
+
+            command = get_command()  # Слушаем голос
+            if command:
+                execute_command(command)
+            if command == "стоп" or command == "выход" or command == "до связи":
+                print("Работа ассистента завершена.")
+                break
+            execute_command(command)
+        except Exception as e:
+                    print(f"Ошибка: {e}")
+                    continue
