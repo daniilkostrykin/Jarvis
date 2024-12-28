@@ -10,7 +10,7 @@ app_mapping = {
     "вс код": "Visual Studio Code",
     "браузер": "Yandex",
     "яндекс": "Yandex Browser",
-    "зона": "Zona",
+    "зону": "Zona",
     "чат": "ChatGPT",
 }
 

@@ -48,26 +48,59 @@ def open_application(command):
             else:
                 print(f"Путь для {key} не существует: {path}")
     return False
+import subprocess
 
-def open_link(command):
-    """Открывает ссылку по указанной команде."""
+def run_task(task_name):
+    """Запускает задачу из Планировщика задач."""
+    try:
+        result = subprocess.run(
+            ["schtasks", "/run", "/tn", task_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if result.returncode == 0:
+            print(f"Задача '{task_name}' успешно запущена.")
+            return True
+        else:
+            print(f"Ошибка при запуске задачи '{task_name}': {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"Ошибка выполнения: {e}")
+        return False
+
+def open_link(command, task_name=None):
+    """Открывает ссылку по указанной команде и запускает задачу, если указано."""
     command = command.lower().strip()
     for key, url in links.items():
         if key in command:
+            # Если указано задание в планировщике задач
+            if task_name:
+                if not run_task(task_name):
+                    return False
+                print(f"Запускаю задачу: {task_name}")
+            # Открытие ссылки
             try:
                 webbrowser.open(url)
                 print(f"Открываю ссылку: {url}")
                 return True
             except Exception as e:
                 print(f"Ошибка при открытии ссылки {key}: {e}")
+                return False
+    print(f"Ссылка для команды '{command}' не найдена.")
     return False
 
 def perform_action(command):
     """Обрабатывает команды для открытия приложений, папок или ссылок."""
     if command.startswith("открой") or command.startswith("запусти"):
-        # Сначала проверяем приложения и папки
+        # Проверяем приложения и папки
         if open_application(command):
             return
+        # Если команда для ссылки с запуском задачи
+        if "youtube" in command:
+            task_name = "RunAppAsAdmin"  # Имя задачи в Планировщике задач
+            if open_link(command, task_name=task_name):
+                return
         # Если приложение не найдено, пробуем открыть ссылку
         if open_link(command):
             return
