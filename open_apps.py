@@ -1,6 +1,9 @@
 import os
+import time
 import subprocess
 import webbrowser
+from pywinauto import Application, findwindows
+import pyautogui
 
 # Словарь с приложениями и путями
 translations = {
@@ -14,6 +17,7 @@ translations = {
     "телеграм": "C:\\Users\\Daniil\\Downloads\\Telegram Desktop\\AyuGram\\AyuGram.exe",
     "браузер": "C:\\Users\\Daniil\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Yandex.lnk",
     "блокнот": "C:\\Windows\\System32\\notepad.exe",
+    "музыку": "C:\\Users\\Daniil\\AppData\\Local\\Programs\\YandexMusic\\Яндекс Музыка.exe",
 }
 
 # Словарь с полезными ссылками
@@ -25,16 +29,38 @@ links = {
     "новости": "https://news.google.com",
 }
 
+def control_window(window_title):
+    """Разворачивает окно на полный экран."""
+    try:
+        app = Application().connect(title_re=window_title)
+        main_window = app.window(title_re=window_title)
+
+        # Разворачиваем окно
+        main_window.maximize()
+        print("Окно развернуто на весь экран.")
+
+    except findwindows.ElementNotFoundError:
+        print(f"Окно с заголовком '{window_title}' не найдено.")
+    except Exception as e:
+        print(f"Ошибка управления окном: {e}")
+
+
 def open_application(command):
     """Открывает приложение или папку по указанной команде."""
     command = command.lower().strip()
     for key, path in translations.items():
         if key in command:
             if os.path.exists(path):
-                if path.endswith(".exe"):  # Если это исполняемый файл
+                # Если это исполняемый файл или ярлык
+                if path.endswith(".exe") or path.endswith(".lnk"):
                     try:
                         subprocess.Popen([path])
                         print(f"Открываю {key}...")
+                        
+                        if key in ["музыка", "музыку"]:
+                            time.sleep(5)  # Даем время для запуска
+                            control_window("Яндекс Музыка")
+                            click_my_wave_button()
                         return True
                     except Exception as e:
                         print(f"Ошибка при открытии {key}: {e}")
@@ -48,7 +74,8 @@ def open_application(command):
             else:
                 print(f"Путь для {key} не существует: {path}")
     return False
-import subprocess
+
+
 
 def run_task(task_name):
     """Запускает задачу из Планировщика задач."""
@@ -68,6 +95,7 @@ def run_task(task_name):
     except Exception as e:
         print(f"Ошибка выполнения: {e}")
         return False
+
 
 def open_link(command, task_name=None):
     """Открывает ссылку по указанной команде и запускает задачу, если указано."""
@@ -90,9 +118,10 @@ def open_link(command, task_name=None):
     print(f"Ссылка для команды '{command}' не найдена.")
     return False
 
+
 def perform_action(command):
     """Обрабатывает команды для открытия приложений, папок или ссылок."""
-    if command.startswith("открой") or command.startswith("запусти"):
+    if command.startswith("открой") or command.startswith("запусти") or command.startswith("включи"):
         # Проверяем приложения и папки
         if open_application(command):
             return
@@ -105,3 +134,31 @@ def perform_action(command):
         if open_link(command):
             return
     print(f"Команда '{command}' не распознана.")
+
+
+def click_my_wave_button():
+    """Имитирует нажатие на кнопку 'Моя волна'."""
+    try:
+        # Задержка для загрузки окна
+        #time.sleep(5)  # уменьшена задержка
+
+        # Активация окна
+        from pywinauto import Application
+        app = Application().connect(title_re="Яндекс Музыка")
+        main_window = app.window(title_re="Яндекс Музыка")
+        main_window.set_focus()
+
+        # Проверка активного окна
+        if not main_window.has_focus():
+            print("Окно не активно!")
+            return
+
+        # Получение координат
+        button_position = (718, 323)  # Убедитесь, что это верные координаты кнопки 'Моя волна'
+
+        # Перемещение мыши и клик
+        pyautogui.moveTo(button_position[0], button_position[1], duration=1)
+        pyautogui.click()
+        print("Кнопка 'Моя волна' нажата.")
+    except Exception as e:
+        print(f"Ошибка при нажатии кнопки: {e}")

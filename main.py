@@ -42,7 +42,7 @@ def get_command_input():
 
 def execute_command(command):
     """Обработка команд."""
-    if command.startswith("открой") or command.startswith("запусти"):
+    if command.startswith("открой") or command.startswith("запусти") or command.startswith("включи"):
         perform_action(command)
         return
 
