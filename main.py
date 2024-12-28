@@ -1,8 +1,7 @@
 from switch_window import switch_to_application, select_window_from_list
-from open_apps import open_application
+from open_apps import perform_action
 import speech_recognition as sr
 import pyttsx3
-
 
 # Инициализация модуля синтеза речи
 engine = pyttsx3.init()
@@ -43,9 +42,8 @@ def get_command_input():
 
 def execute_command(command):
     """Обработка команд."""
-    if command.startswith("открой"):
-        app_name = command.replace("открой", "").strip()
-        open_application(app_name)
+    if command.startswith("открой") or command.startswith("запусти"):
+        perform_action(command)
         return
 
     if "переключись на" in command:
@@ -56,14 +54,14 @@ def execute_command(command):
     print(f"Команда '{command}' не распознана.")
 
 
-# Обновленный вызов программы
+# Основная программа
 if __name__ == "__main__":
     print("Привет! Я ваш ассистент. Чем могу помочь?")
     command_input_method = get_command_input()
 
     while True:
         command = command_input_method()
-        if command == "стоп" or command == "выход" or command == "до связи":
+        if command in ["стоп", "выход", "до связи"]:
             print("Работа ассистента завершена.")
             break
         execute_command(command)
