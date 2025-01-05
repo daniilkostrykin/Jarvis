@@ -18,6 +18,7 @@ translations = {
     "браузер": "C:\\Users\\Daniil\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Yandex.lnk",
     "блокнот": "C:\\Windows\\System32\\notepad.exe",
     "музыку": "C:\\Users\\Daniil\\AppData\\Local\\Programs\\YandexMusic\\Яндекс Музыка.exe",
+    "зону": "C:\\Users\\Daniil\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Zona.lnk",
 }
 
 # Словарь с полезными ссылками
@@ -44,7 +45,6 @@ def control_window(window_title):
     except Exception as e:
         print(f"Ошибка управления окном: {e}")
 
-
 def open_application(command):
     """Открывает приложение или папку по указанной команде."""
     command = command.lower().strip()
@@ -52,23 +52,28 @@ def open_application(command):
         if key in command:
             if os.path.exists(path):
                 # Если это исполняемый файл или ярлык
-                if path.endswith(".exe") or path.endswith(".lnk"):
+                if path.endswith(".exe"):
                     try:
                         subprocess.Popen([path])
-                        print(f"Открываю {key}...")
-                        
+                        print(f"Открываю {key} через subprocess...")
+                        # Дополнительная обработка для Яндекс Музыки
                         if key in ["музыка", "музыку"]:
                             time.sleep(5)  # Даем время для запуска
-                            
                             app = Application().connect(title_re="Яндекс Музыка")
                             main_window = app.window(title_re="Яндекс Музыка")
                             main_window.set_focus()
-                            
                             control_window("Яндекс Музыка")
                             click_my_wave_button()
                         return True
                     except Exception as e:
                         print(f"Ошибка при открытии {key}: {e}")
+                elif path.endswith(".lnk"):
+                    try:
+                        os.startfile(path)
+                        print(f"Открываю {key} через os.startfile...")
+                        return True
+                    except Exception as e:
+                        print(f"Ошибка при открытии ярлыка {key}: {e}")
                 else:  # Если это папка
                     try:
                         os.startfile(path)
@@ -79,8 +84,6 @@ def open_application(command):
             else:
                 print(f"Путь для {key} не существует: {path}")
     return False
-
-
 
 def run_task(task_name):
     """Запускает задачу из Планировщика задач."""

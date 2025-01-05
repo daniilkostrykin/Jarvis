@@ -2,43 +2,54 @@ from switch_window import switch_to_application, select_window_from_list
 from open_apps import perform_action
 import speech_recognition as sr
 import pyttsx3
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
 
 # Инициализация модуля синтеза речи
 engine = pyttsx3.init()
 
+# Создаем окно для отображения сообщений
+root = tk.Tk()
+root.title("Ассистент")
+text_area = ScrolledText(root, wrap=tk.WORD, width=60, height=20, state='disabled')
+text_area.pack(padx=10, pady=10)
+
+def update_output(message):
+    """Обновляет текст в окне."""
+    text_area.config(state='normal')
+    text_area.insert(tk.END, message + "\n")
+    text_area.see(tk.END)  # Автопрокрутка к последнему сообщению
+    text_area.config(state='disabled')
 
 def speak(text):
     """Функция для озвучивания текста."""
     engine.say(text)
     engine.runAndWait()
 
-
 def listen():
     """Функция для распознавания голоса."""
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        print("Слушаю...")
+        update_output("Слушаю...")
         try:
             audio = recognizer.listen(source, timeout=5)
             command = recognizer.recognize_google(audio, language='ru-RU')
-            print(f"Вы сказали: {command}")
+            update_output(f"Вы сказали: {command}")
             return command.lower()
         except sr.UnknownValueError:
-            print("Не удалось распознать речь.")
+            update_output("Не удалось распознать речь.")
             return ""
         except sr.RequestError:
-            print("Проблема с подключением к интернету.")
+            update_output("Проблема с подключением к интернету.")
             return ""
         except sr.WaitTimeoutError:
-            print("Вы ничего не сказали.")
+            update_output("Вы ничего не сказали.")
             return ""
-
 
 def get_command_input():
     """Функция для выбора способа ввода команды (только голосом)."""
-    print("Голосовой ввод активирован. Слушаю...")
+    update_output("Голосовой ввод активирован. Слушаю...")
     return listen  # Возвращаем функцию для голосового ввода
-
 
 def execute_command(command):
     """Обработка команд."""
@@ -51,17 +62,23 @@ def execute_command(command):
         switch_to_application(window_name)
         return
 
-    print(f"Команда '{command}' не распознана.")
-
+    update_output(f"Команда '{command}' не распознана.")
 
 # Основная программа
-if __name__ == "__main__":
-    print("Привет! Я ваш ассистент. Чем могу помочь?")
+def main_loop():
+    update_output("Привет! Я ваш ассистент. Чем могу помочь?")
     command_input_method = get_command_input()
 
     while True:
         command = command_input_method()
         if command in ["стоп", "выход", "до связи"]:
-            print("Работа ассистента завершена.")
+            update_output("Работа ассистента завершена.")
+            root.destroy() 
             break
         execute_command(command)
+
+# Запускаем основной цикл в отдельном потоке, чтобы окно оставалось отзывчивым
+import threading
+threading.Thread(target=main_loop, daemon=True).start()
+
+root.mainloop()

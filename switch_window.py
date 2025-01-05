@@ -8,7 +8,7 @@ app_mapping = {
     "блокнот": "Блокнот",
     "telegram": "AyuGram",
     "вс код": "Visual Studio Code",
-    "браузер": "Yandex",
+    "браузер": "Яндекс Браузер",
     "яндекс": "Yandex Browser",
     "зону": "Zona",
     "чат": "ChatGPT",
